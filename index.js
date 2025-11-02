@@ -25,6 +25,7 @@ async function run() {
 
     const db = client.db('smart_db');
     const productsCollection = db.collection('products');
+    const bidsCollection = db.collection('bids')
 
     // add a product
     app.post('/products', async (req, res) => {
@@ -73,6 +74,28 @@ async function run() {
 
     app.get('/products', async (req, res) => {
       const result = await productsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // bids api are here
+
+    // get all  bids
+    // sobgulo bid theke ami j j bid gula koresi sei bidgulo amar email diye search kore ber korte chai(query parameter bole etake)
+    app.get('/bids', async(req, res)=>{
+        const email = req.query.email
+        const query = {}
+        if(email){
+            query.buyer_email = email
+        }
+        const cursor = bidsCollection.find(query)
+        const result = await cursor.toArray()
+        res.send(result)
+    })
+
+    // add a bid
+     app.post('/bids', async (req, res) => {
+      const newBid = req.body;
+      const result = await bidsCollection.insertOne(newBid);
       res.send(result);
     });
 
