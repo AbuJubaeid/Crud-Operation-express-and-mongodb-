@@ -1,21 +1,22 @@
-const express = require('express');
-const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
 // middleware
 app.use(cors());
-app.use(express.json())
+app.use(express.json());
 
-const uri = "mongodb+srv://smartDealsdb:Uk4kXpxZdD34R9Nq@cluster0.ke2w89y.mongodb.net/?appName=Cluster0";
+const uri =
+  "mongodb+srv://smartDealsdb:Uk4kXpxZdD34R9Nq@cluster0.ke2w89y.mongodb.net/?appName=Cluster0";
 
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -23,56 +24,71 @@ async function run() {
     await client.connect();
     console.log("✅ Connected to MongoDB");
 
-    const db = client.db('smart_db');
-    const productsCollection = db.collection('products');
-    const bidsCollection = db.collection('bids')
+    const db = client.db("smart_db");
+    const productsCollection = db.collection("products");
+    const bidsCollection = db.collection("bids");
+    const usersCollection = db.collection("users");
+
+    // add a user
+    app.post("/users", async (req, res) => {
+      const newUsers = req.body;
+      const email = req.body.email;
+      const query = { email: email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        res.send({ message: "user already exixst, no need to add again" });
+      } else {
+        const result = await usersCollection.insertOne(newUsers);
+        res.send(result);
+      }
+    });
 
     // add a product
-    app.post('/products', async (req, res) => {
+    app.post("/products", async (req, res) => {
       const newProduct = req.body;
       const result = await productsCollection.insertOne(newProduct);
       res.send(result);
     });
 
     // get all products
-    app.get('/products', async(req, res)=>{
-        const cursor = productsCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-    })
+    app.get("/products", async (req, res) => {
+      const cursor = productsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     // get a single product
-    app.get('/products/:id', async(req, res)=>{
-        const id = req.params.id
-        const query = {_id : new ObjectId(id)}
-        const result = await productsCollection.findOne(query)
-        res.send(result)
-    })
+    app.get("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productsCollection.findOne(query);
+      res.send(result);
+    });
 
     // delete a product
-    app.delete('/products/:id', async(req, res)=>{
-        const id = req.params.id
-        const query = {_id : new ObjectId(id)}
-        const result = await productsCollection.deleteOne(query);
-        res.send(result);
-    })
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // update a product
-    app.patch('/products/:id', async(req, res)=>{
-        const updateProduct = req.body;
-        const id = req.params.id
-        const query = {_id : new ObjectId(id)}
-        const update = {
+    app.patch("/products/:id", async (req, res) => {
+      const updateProduct = req.body;
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const update = {
         $set: {
-            name : updateProduct.name,
-            price : updateProduct.price
+          name: updateProduct.name,
+          price: updateProduct.price,
         },
-        };
-        const result = await productsCollection.updateOne(query, update);
-        res.send(result);
-    })
+      };
+      const result = await productsCollection.updateOne(query, update);
+      res.send(result);
+    });
 
-    app.get('/products', async (req, res) => {
+    app.get("/products", async (req, res) => {
       const result = await productsCollection.find().toArray();
       res.send(result);
     });
@@ -81,33 +97,32 @@ async function run() {
 
     // get all  bids
     // sobgulo bid theke ami j j bid gula koresi sei bidgulo amar email diye search kore ber korte chai(query parameter bole etake)
-    app.get('/bids', async(req, res)=>{
-        const email = req.query.email
-        const query = {}
-        if(email){
-            query.buyer_email = email
-        }
-        const cursor = bidsCollection.find(query)
-        const result = await cursor.toArray()
-        res.send(result)
-    })
+    app.get("/bids", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.buyer_email = email;
+      }
+      const cursor = bidsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     // add a bid
-     app.post('/bids', async (req, res) => {
+    app.post("/bids", async (req, res) => {
       const newBid = req.body;
       const result = await bidsCollection.insertOne(newBid);
       res.send(result);
     });
 
     console.log("✅ Routes are ready");
-    
   } catch (error) {
     console.error(error);
   }
 }
-run()
+run();
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send("smart server is running");
 });
 
