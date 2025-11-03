@@ -29,6 +29,8 @@ async function run() {
     const bidsCollection = db.collection("bids");
     const usersCollection = db.collection("users");
 
+    // client side started
+
     // add a user
     app.post("/users", async (req, res) => {
       const newUsers = req.body;
@@ -42,6 +44,16 @@ async function run() {
         res.send(result);
       }
     });
+
+    // get post from database
+    app.get('/recent-products', async(req, res)=>{
+        const cursor = productsCollection.find().sort({created_at: -1}).limit(6)
+        const result = await cursor.toArray()
+        res.send(result)
+    })
+    // client side finished
+
+
 
     // add a product
     app.post("/products", async (req, res) => {
