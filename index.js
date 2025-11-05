@@ -127,6 +127,28 @@ async function run() {
       res.send(result);
     });
 
+    // get bids for the same product
+    app.get('/products/bids/:productId', async(req, res)=>{
+      const productId = req.params.productId
+      const query = {product: productId}
+      const cursor = bidsCollection.find(query).sort({bid_price: -1}) 
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    // get my bids only
+    app.get('/bids', async(req, res)=>{
+      const query = {}
+      if(query.email){
+        query.buyer_email = email
+      }
+      const cursor = bidsCollection.find(query)
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+
+
     console.log("✅ Routes are ready");
   } catch (error) {
     console.error(error);
