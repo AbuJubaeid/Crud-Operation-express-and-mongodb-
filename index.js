@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-var admin = require("firebase-admin");
+const admin = require("firebase-admin");
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
@@ -8,7 +8,7 @@ const port = process.env.PORT || 3000;
 
 
 
-var serviceAccount = require("./smart-deals-firebase-adminsdk.json");
+const serviceAccount = require("./smart-deals-firebase-adminsdk.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
