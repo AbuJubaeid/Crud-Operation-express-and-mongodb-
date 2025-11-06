@@ -1,13 +1,53 @@
 const express = require("express");
 const cors = require("cors");
+var admin = require("firebase-admin");
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
+
+
+var serviceAccount = require("./smart-deals-firebase-adminsdk.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 // middleware
 app.use(cors());
 app.use(express.json());
+
+const logger = (req, res, next) =>{
+  console.log("logging information")
+  next()
+}
+
+const verifyFirebaseToken = async(req, res, next) =>{
+  console.log("in the token area", req.headers.authorization)
+  if(!req.headers.authorization){
+    return res.status(401).send({message: "unauthorized access"})
+  }
+  const token = req.headers.authorization.split(' ')[1]
+  if(!token){
+    return res.status(401).send({message: "unauthorized access"})
+  }
+
+  // 1. access token sara information dibo na
+  // 2. ekta user sudhu nijer info pabe==> "get my bids" ekhane ei validation hoise if er moddhe
+
+  // verify id token
+  try{
+    const userInfo = await admin.auth().verifyIdToken(token)
+    req.token_email = userInfo.email;
+    console.log("after user validation", userInfo)
+    next()
+  }
+  catch{
+     return res.status(401).send({message: "unauthorized access"})
+  }
+  
+}
 
 
 const uri =
@@ -111,16 +151,16 @@ async function run() {
 
     // get all  bids
     // sobgulo bid theke ami j j bid gula koresi sei bidgulo amar email diye search kore ber korte chai(query parameter bole etake)
-    app.get("/bids", async (req, res) => {
-      const email = req.query.email;
-      const query = {};
-      if (email) {
-        query.buyer_email = email;
-      }
-      const cursor = bidsCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
-    });
+    // app.get("/bids", async (req, res) => {
+    //   const email = req.query.email;
+    //   const query = {};
+    //   if (email) {
+    //     query.buyer_email = email;
+    //   }
+    //   const cursor = bidsCollection.find(query);
+    //   const result = await cursor.toArray();
+    //   res.send(result);
+    // });
 
     // add a bid
     app.post("/bids", async (req, res) => {
@@ -130,7 +170,7 @@ async function run() {
     });
 
     // get bids for the same product
-    app.get('/products/bids/:productId', async(req, res)=>{
+    app.get('/products/bids/:productId', verifyFirebaseToken, async(req, res)=>{
       const productId = req.params.productId
       const query = {product: productId}
       const cursor = bidsCollection.find(query).sort({bid_price: -1}) 
@@ -139,11 +179,17 @@ async function run() {
     })
 
     // get my bids only
-    app.get('/bids', async(req, res)=>{
+    app.get('/bids', logger, verifyFirebaseToken, async(req, res)=>{
+      // console.log('headers', req.headers)
       const query = {}
       if(query.email){
         query.buyer_email = email
       }
+      // verify user have access to see this data
+      // unauthorized user data fetch kora link e sorasori email diye check kore amar document pete pare....seti bondho korar jonno ei condition
+            if (email !== req.token_email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
       const cursor = bidsCollection.find(query)
       const result = await cursor.toArray()
       res.send(result)
